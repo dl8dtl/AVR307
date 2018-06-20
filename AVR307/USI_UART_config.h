@@ -1,13 +1,6 @@
 //********** USI UART Defines **********//
 
-//#define SYSTEM_CLOCK             14745600
-//#define SYSTEM_CLOCK             11059200
-//#define SYSTEM_CLOCK              8000000
-//#define SYSTEM_CLOCK              7372800
-#define SYSTEM_CLOCK              3686400
-//#define SYSTEM_CLOCK              2000000
-//#define SYSTEM_CLOCK              1843200
-//#define SYSTEM_CLOCK              1000000
+#define SYSTEM_CLOCK              F_CPU
 
 //#define BAUDRATE                   115200
 //#define BAUDRATE                    57600
