@@ -121,7 +121,8 @@ void USI_UART_Initialise_Receiver( void )
     DDRB  &= ~((1<<PB3)|(1<<PB2)|(1<<PB1)|(1<<PB0));        // Set USI DI, DO and SCK pins as inputs.  
     USICR  =  0;                                            // Disable USI.
     GIFR   =  (1<<PCIF);                                    // Clear pin change interrupt flag.
-    GIMSK |=  (1<<PCIE);                                    // Enable pin change interrupt for PB3:0.
+    PCMSK = (1<<PCINT0);
+    GIMSK |=  (1<<PCIE);                                    // Enable pin change interrupt for PB0.
 }
 
 // Puts data in the transmission buffer, after reverseing the bits in the byte.
@@ -231,7 +232,8 @@ ISR(USI_OVF_vect)
                 DDRB  &= ~((1<<PB3)|(1<<PB2)|(1<<PB1)|(1<<PB0));        // Set USI DI, DO and SCK pins as inputs.  
                 USICR  =  0;                                            // Disable USI.
                 GIFR   =  (1<<PCIF);                                    // Clear pin change interrupt flag.
-                GIMSK |=  (1<<PCIE);                                    // Enable pin change interrupt for PB3:0.
+                PCMSK = (1<<PCINT0);
+                GIMSK |=  (1<<PCIE);                                    // Enable pin change interrupt for PB0.
             }
         }
     }
@@ -258,7 +260,8 @@ ISR(USI_OVF_vect)
         DDRB  &= ~((1<<PB3)|(1<<PB2)|(1<<PB1)|(1<<PB0));        // Set USI DI, DO and SCK pins as inputs.  
         USICR  =  0;                                            // Disable USI.
         GIFR   =  (1<<PCIF);                                    // Clear pin change interrupt flag.
-        GIMSK |=  (1<<PCIE);                                    // Enable pin change interrupt for PB3:0.
+        PCMSK = (1<<PCINT0);
+        GIMSK |=  (1<<PCIE);                                    // Enable pin change interrupt for PB0.
     }
     
 }
