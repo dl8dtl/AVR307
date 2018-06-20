@@ -1,5 +1,6 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <avr/sleep.h>
 
 #include "USI_UART_config.h"
 
@@ -12,7 +13,7 @@ int main( void )
 	
 	USI_UART_Flush_Buffers();
 	USI_UART_Initialise_Receiver();                                         // Initialisation for USI_UART receiver
-	__enable_interrupt();                                                   // Enable global interrupts
+	sei();                                                                  // Enable global interrupts
 	
 	MCUCR = (1<<SE)|(0<<SM1)|(0<<SM0);                                      // Enable Sleepmode: Idle
 	
@@ -26,6 +27,6 @@ int main( void )
 			}
 			USI_UART_Transmit_Byte( USI_UART_Receive_Byte() );              // Echo the received character
 		}
-		__sleep();                                                          // Sleep when waiting for next event
+		sleep_cpu();                                                            // Sleep when waiting for next event
 	}
 }
