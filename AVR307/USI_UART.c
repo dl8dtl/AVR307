@@ -40,7 +40,7 @@
 
 //********** Static Variables **********//
 
-__no_init __regvar static unsigned char USI_UART_TxData @ 15;   // Tells the compiler to store the byte to be transmitted in registry.
+register unsigned char USI_UART_TxData asm ("r2");   // Tells the compiler to store the byte to be transmitted in registry.
 
 static unsigned char          UART_RxBuf[UART_RX_BUFFER_SIZE];  // UART buffers. Size is definable in the header file.
 static volatile unsigned char UART_RxHead;
@@ -90,7 +90,7 @@ void USI_UART_Flush_Buffers( void )
 // Initialise USI for UART transmission.
 void USI_UART_Initialise_Transmitter( void )                              
 {
-    __disable_interrupt();
+    cli();
     TCNT0  = 0x00;
     TCCR0  = (1<<PSR0)|(0<<CS02)|(0<<CS01)|(1<<CS00);         // Reset the prescaler and start Timer0.
     TIFR   = (1<<TOV0);                                       // Clear Timer0 OVF interrupt flag.
@@ -108,7 +108,7 @@ void USI_UART_Initialise_Transmitter( void )
                   
     USI_UART_status.ongoing_Transmission_From_Buffer = TRUE;
                   
-    __enable_interrupt();
+    sei();
 }
 
 // Initialise USI for UART reception.
@@ -163,8 +163,7 @@ unsigned char USI_UART_Data_In_Receive_Buffer( void )
 
 // The pin change interrupt is used to detect USI_UART reseption.
 // It is here the USI is configured to sample the UART signal.
-#pragma vector=IO_PINS_vect                                       
-__interrupt void IO_Pin_Change_ISR(void)                                
+ISR(PCINT0_vect)
 {                                                                    
     if (!( PINB & (1<<PB0) ))                                     // If the USI DI pin is low, then it is likely that it
     {                                                             //  was this pin that generated the pin change interrupt.
@@ -189,8 +188,7 @@ __interrupt void IO_Pin_Change_ISR(void)
 
 // The USI Counter Overflow interrupt is used for moving data between memmory and the USI data register.
 // The interrupt is used for both transmission and reception.
-#pragma vector=USI_OVF_vect                                             
-__interrupt void USI_Counter_Overflow_ISR(void)                              
+ISR(USI_OVF_vect)
 {
     unsigned char tmphead,tmptail;
     
@@ -264,8 +262,7 @@ __interrupt void USI_Counter_Overflow_ISR(void)
 }
 
 // Timer0 Overflow interrupt is used to trigger the sampling of signals on the USI ports.
-#pragma vector=TIMER0_OVF0_vect             
-__interrupt void Timer0_OVF_ISR(void)
+ISR(TIM0_OVF_vect)
 {
     TCNT0 += TIMER0_SEED;                   // Reload the timer,
                                             // current count is added for timing correction.
