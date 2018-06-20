@@ -92,7 +92,8 @@ void USI_UART_Initialise_Transmitter( void )
 {
     cli();
     TCNT0  = 0x00;
-    TCCR0  = (1<<PSR0)|(0<<CS02)|(0<<CS01)|(1<<CS00);         // Reset the prescaler and start Timer0.
+    GTCCR  = (1<<PSR0);                                       // Reset the prescaler and start Timer0.
+    TCCR0B = (0<<CS02)|(0<<CS01)|(1<<CS00);
     TIFR   = (1<<TOV0);                                       // Clear Timer0 OVF interrupt flag.
     TIMSK |= (1<<TOIE0);                                      // Enable Timer0 OVF interrupt.
                                                                 
@@ -120,7 +121,7 @@ void USI_UART_Initialise_Receiver( void )
     DDRB  &= ~((1<<PB3)|(1<<PB2)|(1<<PB1)|(1<<PB0));        // Set USI DI, DO and SCK pins as inputs.  
     USICR  =  0;                                            // Disable USI.
     GIFR   =  (1<<PCIF);                                    // Clear pin change interrupt flag.
-    GIMSK |=  (1<<PCIE0);                                   // Enable pin change interrupt for PB3:0.
+    GIMSK |=  (1<<PCIE);                                    // Enable pin change interrupt for PB3:0.
 }
 
 // Puts data in the transmission buffer, after reverseing the bits in the byte.
@@ -168,7 +169,8 @@ ISR(PCINT0_vect)
     if (!( PINB & (1<<PB0) ))                                     // If the USI DI pin is low, then it is likely that it
     {                                                             //  was this pin that generated the pin change interrupt.
         TCNT0  = INTERRUPT_STARTUP_DELAY + INITIAL_TIMER0_SEED;   // Plant TIMER0 seed to match baudrate (incl interrupt start up time.).
-        TCCR0  = (1<<PSR0)|(0<<CS02)|(0<<CS01)|(1<<CS00);         // Reset the prescaler and start Timer0.
+        GTCCR  = (1<<PSR0);                                       // Reset the prescaler and start Timer0.
+        TCCR0B = (0<<CS02)|(0<<CS01)|(1<<CS00);
         TIFR   = (1<<TOV0);                                       // Clear Timer0 OVF interrupt flag.
         TIMSK |= (1<<TOIE0);                                      // Enable Timer0 OVF interrupt.
                                                                     
@@ -180,7 +182,7 @@ ISR(PCINT0_vect)
         USISR  = 0xF0 |                                           // Clear all USI interrupt flags.
                  USI_COUNTER_SEED_RECEIVE;                        // Preload the USI counter to generate interrupt.
                                                                   
-        GIMSK &=  ~(1<<PCIE0);                                    // Disable pin change interrupt for PB3:0. 
+        GIMSK &=  ~(1<<PCIE);                                     // Disable pin change interrupt for PB3:0. 
         
         USI_UART_status.ongoing_Reception_Of_Package = TRUE;             
     }
@@ -224,12 +226,12 @@ ISR(USI_OVF_vect)
             {
                 USI_UART_status.ongoing_Transmission_From_Buffer = FALSE; 
                 
-                TCCR0  = (0<<CS02)|(0<<CS01)|(0<<CS00);                 // Stop Timer0.
+                TCCR0B  = (0<<CS02)|(0<<CS01)|(0<<CS00);                // Stop Timer0.
                 PORTB |=   (1<<PB3)|(1<<PB2)|(1<<PB1)|(1<<PB0);         // Enable pull up on USI DO, DI and SCK pins. (And PB3 because of pin change interrupt)   
                 DDRB  &= ~((1<<PB3)|(1<<PB2)|(1<<PB1)|(1<<PB0));        // Set USI DI, DO and SCK pins as inputs.  
                 USICR  =  0;                                            // Disable USI.
                 GIFR   =  (1<<PCIF);                                    // Clear pin change interrupt flag.
-                GIMSK |=  (1<<PCIE0);                                   // Enable pin change interrupt for PB3:0.
+                GIMSK |=  (1<<PCIE);                                    // Enable pin change interrupt for PB3:0.
             }
         }
     }
@@ -251,12 +253,12 @@ ISR(USI_OVF_vect)
             UART_RxBuf[tmphead] = USIDR;                                // Store received data in buffer. Note that the data must be bit reversed before used. 
         }                                                               // The bit reversing is moved to the application section to save time within the interrupt.
                                                                 
-        TCCR0  = (0<<CS02)|(0<<CS01)|(0<<CS00);                 // Stop Timer0.
+        TCCR0B  = (0<<CS02)|(0<<CS01)|(0<<CS00);                // Stop Timer0.
         PORTB |=   (1<<PB3)|(1<<PB2)|(1<<PB1)|(1<<PB0);         // Enable pull up on USI DO, DI and SCK pins. (And PB3 because of pin change interrupt)   
         DDRB  &= ~((1<<PB3)|(1<<PB2)|(1<<PB1)|(1<<PB0));        // Set USI DI, DO and SCK pins as inputs.  
         USICR  =  0;                                            // Disable USI.
         GIFR   =  (1<<PCIF);                                    // Clear pin change interrupt flag.
-        GIMSK |=  (1<<PCIE0);                                   // Enable pin change interrupt for PB3:0.
+        GIMSK |=  (1<<PCIE);                                    // Enable pin change interrupt for PB3:0.
     }
     
 }
