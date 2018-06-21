@@ -13,16 +13,9 @@
 
 #define USI_COUNTER_MAX_COUNT     16
 #define USI_COUNTER_SEED_TRANSMIT (USI_COUNTER_MAX_COUNT - HALF_FRAME)
-#define INTERRUPT_STARTUP_DELAY   (0x11 / TIMER_PRESCALER)
-#define TIMER0_SEED               (256 - ( (SYSTEM_CLOCK / BAUDRATE) / TIMER_PRESCALER ))
+#define TIMER0_TOP                (( (SYSTEM_CLOCK / BAUDRATE) / TIMER_PRESCALER ) - 1)
 
-#if ( (( (SYSTEM_CLOCK / BAUDRATE) / TIMER_PRESCALER ) * 3/2) > (256 - INTERRUPT_STARTUP_DELAY) )
-    #define INITIAL_TIMER0_SEED       ( 256 - (( (SYSTEM_CLOCK / BAUDRATE) / TIMER_PRESCALER ) * 1/2) )
-    #define USI_COUNTER_SEED_RECEIVE  ( USI_COUNTER_MAX_COUNT - (START_BIT + DATA_BITS) )
-#else
-    #define INITIAL_TIMER0_SEED       ( 256 - (( (SYSTEM_CLOCK / BAUDRATE) / TIMER_PRESCALER ) * 3/2) )
-    #define USI_COUNTER_SEED_RECEIVE  (USI_COUNTER_MAX_COUNT - DATA_BITS)
-#endif
+#define USI_COUNTER_SEED_RECEIVE  ( USI_COUNTER_MAX_COUNT - (START_BIT + DATA_BITS) )
 
 #define UART_RX_BUFFER_MASK ( UART_RX_BUFFER_SIZE - 1 )
 #if ( UART_RX_BUFFER_SIZE & UART_RX_BUFFER_MASK )
@@ -93,9 +86,9 @@ void USI_UART_Initialise_Transmitter( void )
     cli();
     TCNT0  = 0x00;
     GTCCR  = (1<<PSR0);                                       // Reset the prescaler and start Timer0.
+    TCCR0A = (1<<WGM01);                                      // ... in CTC mode
+    OCR0A  = TIMER0_TOP;
     TCCR0B = (0<<CS02)|(0<<CS01)|(1<<CS00);
-    TIFR   = (1<<TOV0);                                       // Clear Timer0 OVF interrupt flag.
-    TIMSK |= (1<<TOIE0);                                      // Enable Timer0 OVF interrupt.
                                                                 
     USICR  = (0<<USISIE)|(1<<USIOIE)|                         // Enable USI Counter OVF interrupt.
              (0<<USIWM1)|(1<<USIWM0)|                         // Select Three Wire mode.
@@ -169,11 +162,11 @@ ISR(PCINT0_vect)
 {                                                                    
     if (!( PINB & (1<<PB0) ))                                     // If the USI DI pin is low, then it is likely that it
     {                                                             //  was this pin that generated the pin change interrupt.
-        TCNT0  = INTERRUPT_STARTUP_DELAY + INITIAL_TIMER0_SEED;   // Plant TIMER0 seed to match baudrate (incl interrupt start up time.).
+        TCNT0  = TIMER0_TOP / 2;                                  // Plant TIMER0 seed to match baudrate.
         GTCCR  = (1<<PSR0);                                       // Reset the prescaler and start Timer0.
+        TCCR0A = (1<<WGM01);                                      // ... in CTC mode
+        OCR0A  = TIMER0_TOP;
         TCCR0B = (0<<CS02)|(0<<CS01)|(1<<CS00);
-        TIFR   = (1<<TOV0);                                       // Clear Timer0 OVF interrupt flag.
-        TIMSK |= (1<<TOIE0);                                      // Enable Timer0 OVF interrupt.
                                                                     
         USICR  = (0<<USISIE)|(1<<USIOIE)|                         // Enable USI Counter OVF interrupt.
                  (0<<USIWM1)|(1<<USIWM0)|                         // Select Three Wire mode.
@@ -264,12 +257,5 @@ ISR(USI_OVF_vect)
         GIMSK |=  (1<<PCIE);                                    // Enable pin change interrupt for PB0.
     }
     
-}
-
-// Timer0 Overflow interrupt is used to trigger the sampling of signals on the USI ports.
-ISR(TIM0_OVF_vect)
-{
-    TCNT0 += TIMER0_SEED;                   // Reload the timer,
-                                            // current count is added for timing correction.
 }
 
